@@ -7,10 +7,12 @@ public class PieChartPanel extends JPanel {
 
     private double greedyValue;
     private double dpValue;
+    private String title = "";
 
-    public void setValues(double g, double d) {
+    public void setValues(double g, double d, String t) {
         greedyValue = g;
         dpValue = d;
+        title = t;
         repaint();
     }
 
@@ -24,9 +26,9 @@ public class PieChartPanel extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        int size = Math.min(getWidth(), getHeight()) - 40;
+        int size = Math.min(getWidth(), getHeight()) - 60;
         int x = (getWidth() - size) / 2;
-        int y = (getHeight() - size) / 2;
+        int y = 20;
 
         double total = greedyValue + dpValue;
 
@@ -34,34 +36,28 @@ public class PieChartPanel extends JPanel {
         double dpAngle = dpValue / total * 360;
 
         // ===== PIE =====
-        g2.setColor(new Color(70, 130, 180));
+        g2.setColor(Color.BLUE);
         g2.fillArc(x, y, size, size, 0, (int) greedyAngle);
 
-        g2.setColor(new Color(220, 20, 60));
+        g2.setColor(Color.RED);
         g2.fillArc(x, y, size, size, (int) greedyAngle, (int) dpAngle);
 
         // ===== LABELS =====
-        drawLabel(g2,
-                "Greedy",
-                greedyValue,
-                greedyValue / total * 100,
-                0 + greedyAngle / 2,
-                x, y, size);
+        drawLabel(g2, greedyValue / total * 100, greedyAngle / 2, x, y, size);
 
-        drawLabel(g2,
-                "DP",
-                dpValue,
-                dpValue / total * 100,
-                greedyAngle + dpAngle / 2,
-                x, y, size);
+        drawLabel(g2, dpValue / total * 100, greedyAngle + dpAngle / 2, x, y, size);
 
         // ===== LEGEND =====
         drawLegend(g2);
+
+        // ===== CHART TITLE =====
+        g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        int w = g2.getFontMetrics().stringWidth(title);
+        g2.setColor(Color.BLACK);
+        g2.drawString(title, getWidth() / 2 - w / 2, getHeight() - 5);
     }
 
     private void drawLabel(Graphics2D g2,
-                           String name,
-                           double value,
                            double percent,
                            double angle,
                            int x, int y, int size) {
@@ -73,12 +69,18 @@ public class PieChartPanel extends JPanel {
         int tx = (int) (cx + Math.cos(rad) * size * 0.35);
         int ty = (int) (cy - Math.sin(rad) * size * 0.35);
 
-        g2.setColor(Color.BLACK);
         g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        String text = String.format("%.1f%%", percent);
 
-        g2.drawString(name, tx - 15, ty - 5);
-        g2.drawString(String.format("%.0f", value), tx - 15, ty + 10);
-        g2.drawString(String.format("(%.1f%%)", percent), tx - 15, ty + 25);
+        g2.setColor(Color.WHITE);
+        g2.fillOval(tx - 20, ty - 15, 40, 22);
+
+        g2.setColor(Color.BLACK);
+        g2.drawString(
+                text,
+                tx - g2.getFontMetrics().stringWidth(text) / 2,
+                ty
+        );
     }
 
     private void drawLegend(Graphics2D g2) {
@@ -87,12 +89,12 @@ public class PieChartPanel extends JPanel {
 
         g2.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        g2.setColor(new Color(70, 130, 180));
+        g2.setColor(Color.BLUE);
         g2.fillRect(x, y, 15, 15);
         g2.setColor(Color.BLACK);
         g2.drawString("Greedy", x + 20, y + 12);
 
-        g2.setColor(new Color(220, 20, 60));
+        g2.setColor(Color.RED);
         g2.fillRect(x, y + 20, 15, 15);
         g2.setColor(Color.BLACK);
         g2.drawString("DP", x + 20, y + 32);

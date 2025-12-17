@@ -6,6 +6,7 @@ import model.Department;
 import util.CSVReader;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.List;
 
@@ -15,38 +16,40 @@ public class MainFrame extends JFrame {
     private JTextArea dpArea;
     private ValueCostBarChart valueCostChart;
     private TimeBarChart timeChart;
-    private PieChartPanel pieChart;
+    private PieChartPanel budgetPie;
+    private PieChartPanel valuePie;
+    private PieChartPanel timePie;
 
     private List<Department> lastGreedy;
     private List<Department> lastDP;
 
     public MainFrame() {
 
-        setTitle("Walmart Stock Optimization");
+        setTitle("Stock Optimization");
         setSize(1100, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
         Font titleFont = new Font("Segoe UI", Font.BOLD, 16);
-        Font textFont = new Font("Segoe UI", Font.PLAIN, 14);
+        Font textFont = new Font("Segoe UI", Font.PLAIN, 18);
 
         // ================= TOP PANEL =================
         JPanel top = new JPanel();
         top.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JLabel budgetLabel = new JLabel("Budget %:");
+        JLabel budgetLabel = new JLabel("Bütçe %:");
         budgetLabel.setFont(titleFont);
 
         Integer[] percents = {10, 20, 30, 40, 50};
         JComboBox<Integer> budgetBox = new JComboBox<>(percents);
         budgetBox.setFont(textFont);
 
-        JButton runButton = new JButton("Run Algorithms");
+        JButton runButton = new JButton("Algoritmaları Çalıştır");
         runButton.setFont(textFont);
 
-        JButton greedyDetails = new JButton("Greedy Departments");
-        JButton dpDetails = new JButton("DP Departments");
+        JButton greedyDetails = new JButton("Greedy ile Seçilen Ürünler");
+        JButton dpDetails = new JButton("DP ile Seçilen Ürünler");
 
         top.add(budgetLabel);
         top.add(budgetBox);
@@ -63,11 +66,31 @@ public class MainFrame extends JFrame {
         greedyArea.setFont(textFont);
         dpArea.setFont(textFont);
 
+        greedyArea.setMargin(new Insets(10, 10, 10, 10));
+        dpArea.setMargin(new Insets(10, 10, 10, 10));
+
         greedyArea.setEditable(false);
         dpArea.setEditable(false);
 
-        greedyArea.setBorder(BorderFactory.createTitledBorder("Greedy Result"));
-        dpArea.setBorder(BorderFactory.createTitledBorder("DP Result"));
+        greedyArea.setBorder(
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(Color.GRAY),
+                        "Greedy için Sonuçlar",
+                        TitledBorder.LEFT,
+                        TitledBorder.TOP,
+                        new Font("Segoe UI", Font.BOLD, 16)
+                )
+        );
+
+        dpArea.setBorder(
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(Color.GRAY),
+                        "DP için Sonuçlar",
+                        TitledBorder.LEFT,
+                        TitledBorder.TOP,
+                        new Font("Segoe UI", Font.BOLD, 16)
+                )
+        );
 
         JScrollPane greedyScroll = new JScrollPane(greedyArea);
         JScrollPane dpScroll = new JScrollPane(dpArea);
@@ -79,33 +102,31 @@ public class MainFrame extends JFrame {
         add(centerSplit, BorderLayout.CENTER);
 
         // ================= BOTTOM (CHART) =================
-        JPanel bottomPanel = new JPanel(new GridLayout(2, 1));
-
         valueCostChart = new ValueCostBarChart();
         timeChart = new TimeBarChart();
-        pieChart = new PieChartPanel();
 
-        bottomPanel.add(valueCostChart);
-        bottomPanel.add(timeChart);
-        bottomPanel.add(pieChart);
+        budgetPie = new PieChartPanel();
+        valuePie = new PieChartPanel();
+        timePie = new PieChartPanel();
 
-        bottomPanel.setPreferredSize(new Dimension(1100, 300));
+        JPanel bottomPanel = new JPanel(new GridLayout(2, 1));
+
+        // ÜST: BAR CHARTS
+        JPanel barPanel = new JPanel(new GridLayout(1, 2));
+        barPanel.add(valueCostChart);
+        barPanel.add(timeChart);
+
+        // ALT: PIE CHARTS
+        JPanel piePanel = new JPanel(new GridLayout(1, 3));
+        piePanel.add(budgetPie);
+        piePanel.add(valuePie);
+        piePanel.add(timePie);
+
+        bottomPanel.add(barPanel);
+        bottomPanel.add(piePanel);
+
+        bottomPanel.setPreferredSize(new Dimension(1100, 320));
         add(bottomPanel, BorderLayout.SOUTH);
-
-//        valueCostChart = new ValueCostBarChart();
-//        timeChart = new TimeBarChart();
-//        pieChart = new BudgetPieChart();
-//
-//        valueCostChart.setPreferredSize(new Dimension(1100, 150));
-//
-//        JPanel lowerCharts = new JPanel(new GridLayout(1, 2));
-//        lowerCharts.add(timeChart);
-//        lowerCharts.add(pieChart);
-//
-//        bottomPanel.add(valueCostChart);
-//        bottomPanel.add(lowerCharts);
-//
-//        add(bottomPanel, BorderLayout.SOUTH);
 
         // ================= ACTIONS =================
         runButton.addActionListener(e -> {
@@ -139,18 +160,32 @@ public class MainFrame extends JFrame {
             double dTime = (dEnd - dStart) / 1_000_000.0;
 
             greedyArea.setText(
-                    "Selected Departments: " + greedy.size() + "\n" +
-                            "Used Budget: " + gRes.cost + "\n" +
-                            "Total Value: " + gRes.value + "\n" +
-                            "Execution Time: " + String.format("%.3f", gTime) + " ms"
+                    "Seçilen Ürünler: " + greedy.size() + "\n" +
+                            "Bütçe Limiti: " + budget + "\n" +
+                            "Kullanılan Bütçe: " + gRes.cost + "\n" +
+                            "Toplam Fayda: " + gRes.value + "\n" +
+                            "Yürütme Süresi: " + String.format("%.3f", gTime) + " ms"
             );
 
             dpArea.setText(
-                    "Selected Departments: " + dp.size() + "\n" +
-                            "Used Budget: " + dRes.cost + "\n" +
-                            "Total Value: " + dRes.value + "\n" +
-                            "Execution Time: " + String.format("%.3f", dTime) + " ms"
+                    "Seçilen Ürünler: " + dp.size() + "\n" +
+                            "Bütçe Limiti: " + budget + "\n" +
+                            "Kullanılan Bütçe: " + dRes.cost + "\n" +
+                            "Toplam Fayda: " + dRes.value + "\n" +
+                            "Yürütme Süresi: " + String.format("%.3f", dTime) + " ms"
             );
+
+            // ===== EN İYİ SONUCU VURGULA =====
+            if (gRes.value > dRes.value) {
+                greedyArea.setBackground(new Color(220, 255, 220));
+                dpArea.setBackground(Color.WHITE);
+            } else if (dRes.value > gRes.value) {
+                dpArea.setBackground(new Color(220, 255, 220));
+                greedyArea.setBackground(Color.WHITE);
+            } else {
+                greedyArea.setBackground(Color.WHITE);
+                dpArea.setBackground(Color.WHITE);
+            }
 
             valueCostChart.setValues(
                     gRes.value, dRes.value,
@@ -158,20 +193,35 @@ public class MainFrame extends JFrame {
             );
 
             timeChart.setTimes(gTime, dTime);
-            pieChart.setValues(gRes.cost, dRes.cost); // budget için
-            pieChart.setValues(gRes.value, dRes.value); // value için
+            budgetPie.setValues(
+                    gRes.cost,
+                    dRes.cost,
+                    "Kullanılan Bütçe Dağılımı (%)"
+            );
+
+            valuePie.setValues(
+                    gRes.value,
+                    dRes.value,
+                    "Toplam Fayda Dağılımı (%)"
+            );
+
+            timePie.setValues(
+                    gTime,
+                    dTime,
+                    "Yürütme Süresi Dağılımı (%)"
+            );
         });
 
         greedyDetails.addActionListener(e -> {
             if (lastGreedy != null)
                 new DepartmentTableDialog(this,
-                        "Greedy Departments", lastGreedy).setVisible(true);
+                        "Greedy ile Seçilen Ürünler", lastGreedy).setVisible(true);
         });
 
         dpDetails.addActionListener(e -> {
             if (lastDP != null)
                 new DepartmentTableDialog(this,
-                        "DP Departments", lastDP).setVisible(true);
+                        "DP ile Seçilen Ürünler", lastDP).setVisible(true);
         });
     }
 

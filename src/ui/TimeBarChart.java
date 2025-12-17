@@ -99,6 +99,18 @@ public class TimeBarChart extends JPanel {
         // ===== LABELS =====
         g2.drawString("Greedy", greedyX + 3, baseY + 15);
         g2.drawString("DP", dpX + 15, baseY + 15);
+
+        // ===== CHART TITLE =====
+        g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        String title = "Yürütme Süresi (ms)";
+        int titleWidth = g2.getFontMetrics().stringWidth(title);
+
+        g2.drawString(
+                title,
+                getWidth() / 2 - titleWidth / 2,
+                getHeight() - 5
+        );
     }
 }
 

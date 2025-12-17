@@ -43,8 +43,8 @@ public class ValueCostBarChart extends JPanel {
             g2.drawLine(leftMargin, y, getWidth() - rightMargin, y);
         }
 
-        drawPair(g2, 120, chartHeight, baseY, gValue, dValue, "Total Value");
-        drawPair(g2, 380, chartHeight, baseY, gCost, dCost, "Used Budget");
+        drawPair(g2, 120, chartHeight, baseY, gValue, dValue, "Toplam Fayda");
+        drawPair(g2, 380, chartHeight, baseY, gCost, dCost, "Kullanılan Bütçe");
     }
 
     private void drawPair(Graphics2D g, int x, int chartHeight, int baseY,
@@ -63,12 +63,12 @@ public class ValueCostBarChart extends JPanel {
         int dX = x + barWidth + gap;
 
         // Greedy
-        g.setColor(new Color(70, 130, 180));
-        g.fillRoundRect(gX, baseY - gh, barWidth, gh, 10, 10);
+        g.setColor(Color.BLUE);
+        g.fillRect(gX, baseY - gh, barWidth, gh);
 
         // DP
-        g.setColor(new Color(220, 20, 60));
-        g.fillRoundRect(dX, baseY - dh, barWidth, dh, 10, 10);
+        g.setColor(Color.RED);
+        g.fillRect(dX, baseY - dh, barWidth, dh);
 
         // Values above bars
         g.setColor(Color.BLACK);
