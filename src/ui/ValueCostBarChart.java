@@ -23,36 +23,77 @@ public class ValueCostBarChart extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        int h = getHeight() - 60;
-        int baseY = getHeight() - 30;
+        int leftMargin = 60;
+        int rightMargin = 20;
+        int topMargin = 20;
+        int bottomMargin = 40;
 
-        drawPair(g2, 100, h, gValue, dValue, "Total Value");
-        drawPair(g2, 320, h, gCost, dCost, "Used Budget");
+        int chartHeight = getHeight() - topMargin - bottomMargin;
+        int baseY = getHeight() - bottomMargin;
+
+        // ===== AXES =====
+        g2.setColor(Color.BLACK);
+        g2.drawLine(leftMargin, topMargin, leftMargin, baseY);
+        g2.drawLine(leftMargin, baseY, getWidth() - rightMargin, baseY);
+
+        // ===== GRID =====
+        g2.setColor(new Color(220, 220, 220));
+        for (int i = 1; i <= 5; i++) {
+            int y = topMargin + i * chartHeight / 5;
+            g2.drawLine(leftMargin, y, getWidth() - rightMargin, y);
+        }
+
+        drawPair(g2, 120, chartHeight, baseY, gValue, dValue, "Total Value");
+        drawPair(g2, 380, chartHeight, baseY, gCost, dCost, "Used Budget");
     }
 
-    private void drawPair(Graphics2D g, int x, int h,
+    private void drawPair(Graphics2D g, int x, int chartHeight, int baseY,
                           double gv, double dv, String label) {
 
         double max = Math.max(gv, dv);
         if (max == 0) return;
 
-        int bw = 50;
-        int gap = 25;
+        int barWidth = 50;
+        int gap = 30;
 
-        int gh = (int) (gv / max * h);
-        int dh = (int) (dv / max * h);
+        int gh = (int) (gv / max * chartHeight);
+        int dh = (int) (dv / max * chartHeight);
 
+        int gX = x;
+        int dX = x + barWidth + gap;
+
+        // Greedy
         g.setColor(new Color(70, 130, 180));
-        g.fillRoundRect(x, h - gh + 30, bw, gh, 10, 10);
+        g.fillRoundRect(gX, baseY - gh, barWidth, gh, 10, 10);
 
+        // DP
         g.setColor(new Color(220, 20, 60));
-        g.fillRoundRect(x + bw + gap, h - dh + 30, bw, dh, 10, 10);
+        g.fillRoundRect(dX, baseY - dh, barWidth, dh, 10, 10);
 
+        // Values above bars
         g.setColor(Color.BLACK);
-        g.drawString(String.format("%.2f", gv), x, h - gh + 20);
-        g.drawString(String.format("%.2f", dv), x + bw + gap, h - dh + 20);
+        g.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
+        String gvText = String.format("%.2f", gv);
+        String dvText = String.format("%.2f", dv);
+
+        g.drawString(
+                gvText,
+                gX + barWidth / 2 - g.getFontMetrics().stringWidth(gvText) / 2,
+                baseY - gh - 5
+        );
+
+        g.drawString(
+                dvText,
+                dX + barWidth / 2 - g.getFontMetrics().stringWidth(dvText) / 2,
+                baseY - dh - 5
+        );
+
+        // Labels
+        g.drawString("Greedy", gX + 3, baseY + 15);
+        g.drawString("DP", dX + 15, baseY + 15);
+
+        // Category label
         g.drawString(label, x + 15, getHeight() - 10);
     }
 }
-

@@ -15,7 +15,7 @@ public class MainFrame extends JFrame {
     private JTextArea dpArea;
     private ValueCostBarChart valueCostChart;
     private TimeBarChart timeChart;
-    private BudgetPieChart pieChart;
+    private PieChartPanel pieChart;
 
     private List<Department> lastGreedy;
     private List<Department> lastDP;
@@ -83,18 +83,29 @@ public class MainFrame extends JFrame {
 
         valueCostChart = new ValueCostBarChart();
         timeChart = new TimeBarChart();
-        pieChart = new BudgetPieChart();
-
-        valueCostChart.setPreferredSize(new Dimension(1100, 150));
-
-        JPanel lowerCharts = new JPanel(new GridLayout(1, 2));
-        lowerCharts.add(timeChart);
-        lowerCharts.add(pieChart);
+        pieChart = new PieChartPanel();
 
         bottomPanel.add(valueCostChart);
-        bottomPanel.add(lowerCharts);
+        bottomPanel.add(timeChart);
+        bottomPanel.add(pieChart);
 
+        bottomPanel.setPreferredSize(new Dimension(1100, 300));
         add(bottomPanel, BorderLayout.SOUTH);
+
+//        valueCostChart = new ValueCostBarChart();
+//        timeChart = new TimeBarChart();
+//        pieChart = new BudgetPieChart();
+//
+//        valueCostChart.setPreferredSize(new Dimension(1100, 150));
+//
+//        JPanel lowerCharts = new JPanel(new GridLayout(1, 2));
+//        lowerCharts.add(timeChart);
+//        lowerCharts.add(pieChart);
+//
+//        bottomPanel.add(valueCostChart);
+//        bottomPanel.add(lowerCharts);
+//
+//        add(bottomPanel, BorderLayout.SOUTH);
 
         // ================= ACTIONS =================
         runButton.addActionListener(e -> {
@@ -147,7 +158,8 @@ public class MainFrame extends JFrame {
             );
 
             timeChart.setTimes(gTime, dTime);
-            pieChart.setCosts(gRes.cost, dRes.cost);
+            pieChart.setValues(gRes.cost, dRes.cost); // budget için
+            pieChart.setValues(gRes.value, dRes.value); // value için
         });
 
         greedyDetails.addActionListener(e -> {
