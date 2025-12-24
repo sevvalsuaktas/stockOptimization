@@ -6,8 +6,8 @@ import model.Department;
 import util.CSVReader;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainFrame extends JFrame {
@@ -16,230 +16,308 @@ public class MainFrame extends JFrame {
     private JTextArea dpArea;
     private ValueCostBarChart valueCostChart;
     private TimeBarChart timeChart;
-    private PieChartPanel budgetPie;
-    private PieChartPanel valuePie;
-    private PieChartPanel timePie;
+    private PieChartPanel pieChart;
 
-    private List<Department> lastGreedy;
-    private List<Department> lastDP;
+    private List<Department> globalDepartments; // Ana veri listesi (Hafızada tutulur)
+    private List<Department> lastMandatoryList;
+    private List<Department> lastBaseList;
+    private List<Department> lastGreedySelection;
+    private List<Department> lastDPSelection;
+
+    // Renkler
+    public static final Color COL_GREEDY = new Color(255, 204, 0);
+    public static final Color COL_DP = new Color(102, 0, 153);
 
     public MainFrame() {
-
-        setTitle("Stock Optimization");
-        setSize(1100, 700);
+        setTitle("Algoritmik Stok Optimizasyonu");
+        setSize(1350, 850);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        Font titleFont = new Font("Segoe UI", Font.BOLD, 16);
-        Font textFont = new Font("Segoe UI", Font.PLAIN, 18);
+        // Veriyi acılısta yukluyoruz
+        globalDepartments = CSVReader.loadDepartments("data/cleanedWalmartTopStore.csv");
+        if (globalDepartments == null) globalDepartments = new ArrayList<>();
 
-        // ================= TOP PANEL =================
+        Font titleFont = new Font("Segoe UI", Font.BOLD, 14);
+        Font monoFont = new Font("Consolas", Font.PLAIN, 13);
+
+        // Top Panel
         JPanel top = new JPanel();
-        top.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        top.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
+        top.setBackground(new Color(245, 245, 245));
 
-        JLabel budgetLabel = new JLabel("Bütçe %:");
+        JLabel budgetLabel = new JLabel("Bütçe Oranı (%):");
         budgetLabel.setFont(titleFont);
 
-        Integer[] percents = {10, 20, 30, 40, 50};
+        Integer[] percents = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
         JComboBox<Integer> budgetBox = new JComboBox<>(percents);
-        budgetBox.setFont(textFont);
+        budgetBox.setSelectedIndex(4);
 
-        JButton runButton = new JButton("Algoritmaları Çalıştır");
-        runButton.setFont(textFont);
+        JButton stockManageButton = new JButton("Stok Durumu & Düzenle");
+        stockManageButton.setBackground(new Color(255, 140, 0));
+        stockManageButton.setForeground(Color.WHITE);
+        stockManageButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        JButton greedyDetails = new JButton("Greedy ile Seçilen Ürünler");
-        JButton dpDetails = new JButton("DP ile Seçilen Ürünler");
+        JButton runButton = new JButton("HESAPLA");
+        runButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        runButton.setBackground(COL_DP);
+        runButton.setForeground(Color.WHITE);
 
+        JButton greedyDetails = new JButton("Greedy Detay");
+        JButton dpDetails = new JButton("DP Detay");
+
+        // Butonları ekle
+        top.add(stockManageButton);
+        top.add(Box.createHorizontalStrut(20));
         top.add(budgetLabel);
         top.add(budgetBox);
+        top.add(Box.createHorizontalStrut(10));
         top.add(runButton);
+        top.add(Box.createHorizontalStrut(20));
         top.add(greedyDetails);
         top.add(dpDetails);
 
         add(top, BorderLayout.NORTH);
 
-        // ================= CENTER PANEL =================
-        greedyArea = new JTextArea();
-        dpArea = new JTextArea();
-
-        greedyArea.setFont(textFont);
-        dpArea.setFont(textFont);
-
-        greedyArea.setMargin(new Insets(10, 10, 10, 10));
-        dpArea.setMargin(new Insets(10, 10, 10, 10));
-
+        // Center Panel
+        greedyArea = new JTextArea("Lütfen HESAPLA butonuna basın...");
+        dpArea = new JTextArea("Lütfen HESAPLA butonuna basın...");
+        greedyArea.setFont(monoFont);
+        dpArea.setFont(monoFont);
         greedyArea.setEditable(false);
         dpArea.setEditable(false);
+        greedyArea.setMargin(new Insets(10, 10, 10, 10));
 
-        greedyArea.setBorder(
-                BorderFactory.createTitledBorder(
-                        BorderFactory.createLineBorder(Color.GRAY),
-                        "Greedy için Sonuçlar",
-                        TitledBorder.LEFT,
-                        TitledBorder.TOP,
-                        new Font("Segoe UI", Font.BOLD, 16)
-                )
-        );
+        greedyArea.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(COL_GREEDY, 2), "Greedy Raporu"));
+        dpArea.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(COL_DP, 2), "DP Raporu"));
 
-        dpArea.setBorder(
-                BorderFactory.createTitledBorder(
-                        BorderFactory.createLineBorder(Color.GRAY),
-                        "DP için Sonuçlar",
-                        TitledBorder.LEFT,
-                        TitledBorder.TOP,
-                        new Font("Segoe UI", Font.BOLD, 16)
-                )
-        );
-
-        JScrollPane greedyScroll = new JScrollPane(greedyArea);
-        JScrollPane dpScroll = new JScrollPane(dpArea);
-
-        JSplitPane centerSplit =
-                new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, greedyScroll, dpScroll);
-        centerSplit.setDividerLocation(550);
-
+        JSplitPane centerSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(greedyArea), new JScrollPane(dpArea));
+        centerSplit.setDividerLocation(660);
         add(centerSplit, BorderLayout.CENTER);
 
-        // ================= BOTTOM (CHART) =================
+        // Bottom Panel
+        JPanel bottomPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        bottomPanel.setPreferredSize(new Dimension(1100, 280));
+
         valueCostChart = new ValueCostBarChart();
+        valueCostChart.setBorder(BorderFactory.createEtchedBorder());
         timeChart = new TimeBarChart();
+        timeChart.setBorder(BorderFactory.createEtchedBorder());
+        pieChart = new PieChartPanel();
+        pieChart.setBorder(BorderFactory.createEtchedBorder());
 
-        budgetPie = new PieChartPanel();
-        valuePie = new PieChartPanel();
-        timePie = new PieChartPanel();
+        // Acılıs temizligi
+        valueCostChart.setValues(0, 0, 0, 0);
+        timeChart.setTimes(0, 0);
+        pieChart.setDualBudgetValues(0, 0, 0, 0, 0, 0);
 
-        JPanel bottomPanel = new JPanel(new GridLayout(2, 1));
+        bottomPanel.add(valueCostChart);
+        bottomPanel.add(timeChart);
+        bottomPanel.add(pieChart);
 
-        // ÜST: BAR CHARTS
-        JPanel barPanel = new JPanel(new GridLayout(1, 2));
-        barPanel.add(valueCostChart);
-        barPanel.add(timeChart);
-
-        // ALT: PIE CHARTS
-        JPanel piePanel = new JPanel(new GridLayout(1, 3));
-        piePanel.add(budgetPie);
-        piePanel.add(valuePie);
-        piePanel.add(timePie);
-
-        bottomPanel.add(barPanel);
-        bottomPanel.add(piePanel);
-
-        bottomPanel.setPreferredSize(new Dimension(1100, 320));
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // ================= ACTIONS =================
+
+        //  Stok yonetimi: mevcut listeyi kullanır
+        stockManageButton.addActionListener(e -> {
+            new StockManagerDialog(this, globalDepartments).setVisible(true);
+        });
+
+        //  Hesapla butonu: Mevcut listeyi kullanır (Dosyadan yüklemez)
         runButton.addActionListener(e -> {
+            try {
+                if (globalDepartments.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Veri listesi boş!", "Hata", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
-            List<Department> departments =
-                    CSVReader.loadDepartments("data/cleanedWalmartTopStore.csv");
+                lastMandatoryList = new ArrayList<>();
+                lastBaseList = new ArrayList<>();
 
-            int totalCost = departments.stream().mapToInt(d -> d.cost).sum();
-            int percent = (int) budgetBox.getSelectedItem();
-            int budget = totalCost * percent / 100;
+                long staticTotalPoolCost = 0;
+                for (Department d : globalDepartments) staticTotalPoolCost += (d.cost * 3L);
 
-            // -------- GREEDY --------
-            long gStart = System.nanoTime();
-            List<Department> greedy =
-                    GreedySolver.solve(departments, budget);
-            long gEnd = System.nanoTime();
+                int targetSafetyStock = 2;
+                long requiredMandatoryCost = 0;
+                for (Department d : globalDepartments) {
+                    int needed = Math.max(0, targetSafetyStock - d.currentStock);
+                    if (needed > 0) {
+                        requiredMandatoryCost += (d.cost * needed);
+                        for(int k=0; k<needed; k++) lastMandatoryList.add(d);
+                    }
+                }
 
-            // -------- DP --------
-            long dStart = System.nanoTime();
-            List<Department> dp =
-                    DPSolver.solve(departments, budget);
-            long dEnd = System.nanoTime();
+                int percent = (Integer) budgetBox.getSelectedItem();
+                long totalBudgetLong = (staticTotalPoolCost * percent) / 100;
+                int totalBudget = (int) totalBudgetLong;
 
-            lastGreedy = greedy;
-            lastDP = dp;
+                List<Department> solverInputList = new ArrayList<>();
+                int solverBudget = 0;
+                boolean isEmergencyMode = false;
 
-            Result gRes = calculate(greedy);
-            Result dRes = calculate(dp);
+                long costPhase1_Mandatory = 0;
+                long costPhase2_Base = 0;
+                String basePackageStatus = "";
 
-            double gTime = (gEnd - gStart) / 1_000_000.0;
-            double dTime = (dEnd - dStart) / 1_000_000.0;
+                if (totalBudget < requiredMandatoryCost) {
+                    isEmergencyMode = true;
+                    solverBudget = totalBudget;
+                    lastMandatoryList.clear();
+                    basePackageStatus = "İPTAL";
+                    for (Department d : globalDepartments) {
+                        int needed = Math.max(0, targetSafetyStock - d.currentStock);
+                        for (int i = 0; i < needed; i++) solverInputList.add(d);
+                    }
+                    costPhase1_Mandatory = 0;
+                } else {
+                    isEmergencyMode = false;
+                    costPhase1_Mandatory = requiredMandatoryCost;
+                    int remainingBudget = (int) (totalBudget - requiredMandatoryCost);
 
-            greedyArea.setText(
-                    "Seçilen Ürünler: " + greedy.size() + "\n" +
-                            "Bütçe Limiti: " + budget + "\n" +
-                            "Kullanılan Bütçe: " + gRes.cost + "\n" +
-                            "Toplam Fayda: " + gRes.value + "\n" +
-                            "Yürütme Süresi: " + String.format("%.3f", gTime) + " ms"
-            );
+                    List<Department> sortedForBase = new ArrayList<>(globalDepartments);
+                    sortedForBase.sort((d1, d2) -> Double.compare((double)d2.value/d2.cost, (double)d1.value/d1.cost));
 
-            dpArea.setText(
-                    "Seçilen Ürünler: " + dp.size() + "\n" +
-                            "Bütçe Limiti: " + budget + "\n" +
-                            "Kullanılan Bütçe: " + dRes.cost + "\n" +
-                            "Toplam Fayda: " + dRes.value + "\n" +
-                            "Yürütme Süresi: " + String.format("%.3f", dTime) + " ms"
-            );
+                    int itemsCount = 0;
+                    for (Department d : sortedForBase) {
+                        if (remainingBudget >= d.cost) {
+                            remainingBudget -= d.cost;
+                            costPhase2_Base += d.cost;
+                            lastBaseList.add(d);
+                            itemsCount++;
+                        }
+                    }
 
-            // ===== EN İYİ SONUCU VURGULA =====
-            if (gRes.value > dRes.value) {
-                greedyArea.setBackground(new Color(220, 255, 220));
-                dpArea.setBackground(Color.WHITE);
-            } else if (dRes.value > gRes.value) {
-                dpArea.setBackground(new Color(220, 255, 220));
-                greedyArea.setBackground(Color.WHITE);
-            } else {
-                greedyArea.setBackground(Color.WHITE);
-                dpArea.setBackground(Color.WHITE);
+                    if (itemsCount == globalDepartments.size()) basePackageStatus = "ALINDI (Tam)";
+                    else basePackageStatus = "KISMEN (" + itemsCount + "/" + globalDepartments.size() + ")";
+
+                    int copiesToAdd = (itemsCount == globalDepartments.size()) ? 2 : 3;
+                    for (Department d : globalDepartments) {
+                        for (int i = 0; i < copiesToAdd; i++) solverInputList.add(d);
+                    }
+                    solverBudget = remainingBudget;
+                }
+
+                long gStart = System.nanoTime();
+                lastGreedySelection = GreedySolver.solve(solverInputList, solverBudget);
+                long gEnd = System.nanoTime();
+
+                long dStart = System.nanoTime();
+                lastDPSelection = DPSolver.solve(solverInputList, solverBudget);
+                long dEnd = System.nanoTime();
+
+                // Hesaplamalar
+                long mandatoryValue = calculateListValue(lastMandatoryList);
+                long baseValue = calculateListValue(lastBaseList);
+                long commonValue = mandatoryValue + baseValue;
+
+                long greedyAlgoCost = calculateListCost(lastGreedySelection);
+                long totalGreedyCost = costPhase1_Mandatory + costPhase2_Base + greedyAlgoCost;
+                long totalGreedyValue = commonValue + calculateListValue(lastGreedySelection);
+                long greedyUnused = totalBudget - totalGreedyCost;
+
+                long dpAlgoCost = calculateListCost(lastDPSelection);
+                long totalDPCost = costPhase1_Mandatory + costPhase2_Base + dpAlgoCost;
+                long totalDPValue = commonValue + calculateListValue(lastDPSelection);
+                long dpUnused = totalBudget - totalDPCost;
+
+                double gTime = (gEnd - gStart) / 1_000_000.0;
+                double dTime = (dEnd - dStart) / 1_000_000.0;
+
+                // Greedy Raporu
+                StringBuilder sbG = new StringBuilder();
+                sbG.append("=== BÜTÇE AKIŞI (Greedy) ===\n");
+                sbG.append("BAŞLANGIÇ: " + totalBudget + "\n");
+                sbG.append("-----------------------------\n");
+
+                long currentBalanceG = totalBudget;
+                if (isEmergencyMode) {
+                    sbG.append("1. Zorunlu: BÜTÇE YETMEDİ\n   (Bakiye: " + currentBalanceG + ")\n");
+                } else {
+                    currentBalanceG -= costPhase1_Mandatory;
+                    sbG.append("1. Zorunlu: -" + costPhase1_Mandatory + "\n");
+                    sbG.append("   KALAN:    " + currentBalanceG + "\n");
+                }
+
+                if (!isEmergencyMode) {
+                    currentBalanceG -= costPhase2_Base;
+                    sbG.append("2. Temel Pkt: -" + costPhase2_Base + "\n");
+                    sbG.append("   (" + basePackageStatus + ")\n");
+                    sbG.append("   KALAN:    " + currentBalanceG + "\n");
+                } else {
+                    sbG.append("2. Temel Pkt: İPTAL\n");
+                }
+
+                currentBalanceG -= greedyAlgoCost;
+                sbG.append("3. Greedy:   -" + greedyAlgoCost + " (" + lastGreedySelection.size() + " adet)\n");
+                sbG.append("-----------------------------\n");
+                sbG.append("SON BAKİYE: " + currentBalanceG + "\n\n");
+                sbG.append("TOPLAM DEĞER: " + totalGreedyValue + "\n");
+                sbG.append("Süre: " + String.format("%.3f ms", gTime));
+                greedyArea.setText(sbG.toString());
+
+                // DP raporu
+                StringBuilder sbD = new StringBuilder();
+                sbD.append("=== BÜTÇE AKIŞI (DP) ===\n");
+                sbD.append("BAŞLANGIÇ: " + totalBudget + "\n");
+                sbD.append("-----------------------------\n");
+
+                long currentBalanceD = totalBudget;
+                if (isEmergencyMode) {
+                    sbD.append("1. Zorunlu: BÜTÇE YETMEDİ\n   (Bakiye: " + currentBalanceD + ")\n");
+                } else {
+                    currentBalanceD -= costPhase1_Mandatory;
+                    sbD.append("1. Zorunlu: -" + costPhase1_Mandatory + "\n");
+                    sbD.append("   KALAN:    " + currentBalanceD + "\n");
+                }
+
+                if (!isEmergencyMode) {
+                    currentBalanceD -= costPhase2_Base;
+                    sbD.append("2. Temel Pkt: -" + costPhase2_Base + "\n");
+                    sbD.append("   (" + basePackageStatus + ")\n");
+                    sbD.append("   KALAN:    " + currentBalanceD + "\n");
+                } else {
+                    sbD.append("2. Temel Pkt: İPTAL\n");
+                }
+
+                currentBalanceD -= dpAlgoCost;
+                sbD.append("3. DP Seçimi: -" + dpAlgoCost + " (" + lastDPSelection.size() + " adet)\n");
+                sbD.append("-----------------------------\n");
+                sbD.append("SON BAKİYE: " + currentBalanceD + "\n\n");
+                sbD.append("TOPLAM DEĞER: " + totalDPValue + "\n");
+                sbD.append("Süre: " + String.format("%.3f ms", dTime));
+                dpArea.setText(sbD.toString());
+
+                // Grafikler
+                valueCostChart.setValues(totalGreedyValue, totalDPValue, totalGreedyCost, totalDPCost);
+                timeChart.setTimes(gTime, dTime);
+                pieChart.setDualBudgetValues(
+                        costPhase1_Mandatory,
+                        costPhase2_Base,
+                        greedyAlgoCost,
+                        greedyUnused,
+                        dpAlgoCost,
+                        dpUnused
+                );
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Hata: " + ex.getMessage());
             }
-
-            valueCostChart.setValues(
-                    gRes.value, dRes.value,
-                    gRes.cost, dRes.cost
-            );
-
-            timeChart.setTimes(gTime, dTime);
-            budgetPie.setValues(
-                    gRes.cost,
-                    dRes.cost,
-                    "Kullanılan Bütçe Dağılımı (%)"
-            );
-
-            valuePie.setValues(
-                    gRes.value,
-                    dRes.value,
-                    "Toplam Fayda Dağılımı (%)"
-            );
-
-            timePie.setValues(
-                    gTime,
-                    dTime,
-                    "Yürütme Süresi Dağılımı (%)"
-            );
         });
 
-        greedyDetails.addActionListener(e -> {
-            if (lastGreedy != null)
-                new DepartmentTableDialog(this,
-                        "Greedy ile Seçilen Ürünler", lastGreedy).setVisible(true);
-        });
-
-        dpDetails.addActionListener(e -> {
-            if (lastDP != null)
-                new DepartmentTableDialog(this,
-                        "DP ile Seçilen Ürünler", lastDP).setVisible(true);
-        });
+        greedyDetails.addActionListener(e -> showDetails(lastMandatoryList, lastBaseList, lastGreedySelection, "Greedy (Sarı)", true));
+        dpDetails.addActionListener(e -> showDetails(lastMandatoryList, lastBaseList, lastDPSelection, "DP (Mor)", false));
     }
 
-    // ================= HELPER =================
-    private Result calculate(List<Department> list) {
-        int cost = 0, value = 0;
-        for (Department d : list) {
-            cost += d.cost;
-            value += d.value;
-        }
-        return new Result(cost, value);
+    private void showDetails(List<Department> mandatory, List<Department> base, List<Department> algo, String title, boolean isLeft) {
+        if ((mandatory!=null && !mandatory.isEmpty()) || (base!=null && !base.isEmpty()) || (algo!=null && !algo.isEmpty())) {
+            new DepartmentTableDialog(this, title, mandatory, base, algo, globalDepartments, isLeft).setVisible(true);
+        } else JOptionPane.showMessageDialog(this, "Liste boş.");
     }
-
-    private static class Result {
-        int cost, value;
-        Result(int c, int v) {
-            cost = c;
-            value = v;
-        }
-    }
+    private long calculateListCost(List<Department> list) { long c=0; if(list!=null) for(Department d:list)c+=d.cost; return c; }
+    private long calculateListValue(List<Department> list) { long v=0; if(list!=null) for(Department d:list)v+=d.value; return v; }
 }
